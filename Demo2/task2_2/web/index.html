@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Dropbox</title>
+    <meta name="author" content="Luca Hochreutener">
+    <link rel="stylesheet" href="./styles.css?v=1">
+</head>
+<body>
+
+<h1>Dropbox connection</h1>
+<div id="app">
+    <div v-if="access_token == '' || access_token == undefined">
+        <a href="https://www.dropbox.com/oauth2/authorize?client_id=o03i3jtulm1iwb0&response_type=code&redirect_uri=http://localhost:8080/">
+            The app is currently not connected. Click here to connect.
+        </a>
+    </div>
+    <div v-else>
+        <p>Connection was successful.</p>
+
+        <p class="a"><a @click="getAccountInfo">Load account information</a></p>
+        <p class="a"><a @click="uploadFile">Upload picture to dropbox</a>
+        <p class="a"><a @click="deleteFile">Delete all application files</a>
+    </div>
+    <div v-if="account_info.name && account_info.email">
+        <h2>Account information</h2>
+        <p>Name: {{ account_info.name.display_name }}</p>
+        <p>Email: {{ account_info.email }}</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="./scripts.js"></script>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            account_id: '',
+            access_code: '',
+            access_token: '',
+            account_info: {},
+            client_key: 'o03i3jtulm1iwb0',
+        },
+        mounted: function () {
+            var url = new URL(window.location);
+
+            var code = url.searchParams.get("code");
+
+            if (code != null) {
+                this.access_code = code;
+                this.getAccessToken();
+            }
+        },
+        methods: {
+            getAccessToken: function () {
+                axios.get('/dropbox/accessToken?code=' + this.access_code).then(function (response) {
+                    app.access_token = response.data.access_token;
+                    app.account_id = response.data.account_id;
+                });
+            },
+            getAccountInfo: function () {
+                axios.get('/dropbox/accountInfo?token=' + this.access_token + '&account=' + this.account_id).then(function (response) {
+                    app.account_info = response.data;
+                });
+            },
+            uploadFile: function () {
+                axios.get('/dropbox/uploadFile?token=' + this.access_token + '').then(function (response) {
+                    alert("File uploaded");
+                });
+            },
+            deleteFile: function () {
+                axios.get('/dropbox/deleteFile?token=' + this.access_token + '').then(function (response) {
+                    alert("Uploaded files deleted");
+                });
+            }
+        }
+    });
+</script>
+</body>
+</html>
